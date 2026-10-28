@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Timebox Control</title>
+<style>
+:root{--bg:#0e1110;--panel:#171c1a;--field:#0f1412;--hover:#222a26;--fg:#e4ece7;--dim:#8a9a90;--g:#3ee08f;--a:#f5b544;--r:#ff6b7a;--c:#5fd4ff;--line:#26302b}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:13.5px/1.45 -apple-system,BlinkMacSystemFont,"Inter","Segoe UI",sans-serif}
+header{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:10px 16px;position:sticky;top:0;background:rgba(14,17,16,.92);backdrop-filter:blur(8px);z-index:2}
+header b{color:var(--g);font-size:15px;letter-spacing:.5px}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--r);margin-right:6px}
+.dot.up{background:var(--g);box-shadow:0 0 6px var(--g)}
+main{padding:6px 16px 8px}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px;align-items:stretch}
+.cols.top{grid-template-columns:1fr 1.45fr .95fr}@media(max-width:1250px){.cols.top{grid-template-columns:repeat(auto-fit,minmax(340px,1fr))}}
+.stack{display:flex;flex-direction:column;gap:14px;min-width:0}.stack>section:last-child{flex:1}
+section{background:var(--panel);border-radius:12px;padding:12px 14px;min-width:0;margin:0}
+section>h2{margin:0 0 8px;font-size:12px;font-weight:600;color:var(--a);text-transform:uppercase;letter-spacing:1px}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0;min-width:0}
+.seg{display:inline-flex;flex:none;background:var(--field);border-radius:8px;padding:2px;gap:2px}
+.seg button{background:none;padding:2px 9px}
+.row>label{color:var(--dim);flex:0 0 52px;font-size:12.5px}
+.row>label.ck{flex:none;color:var(--fg);display:flex;align-items:center;gap:4px}
+.grow{flex:1 1 0;min-width:0}
+.n{width:46px}.t{width:118px}
+.v{min-width:28px;text-align:right;font-variant-numeric:tabular-nums;color:var(--dim)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px;align-content:start;flex:1}.span2{grid-column:span 2;font-size:11.5px}
+select{max-width:100%}
+input,select,button{font:inherit;font-size:13px;color:var(--fg);background:var(--field);border:1px solid transparent;padding:4px 8px;border-radius:7px;min-height:28px;outline:none}
+input:focus,select:focus{border-color:var(--g)}
+input[type=range]{accent-color:var(--g);flex:1 1 60px;min-width:50px;background:none;padding:0}
+input[type=color]{padding:2px;width:32px;height:28px}
+input[type=checkbox]{accent-color:var(--g);min-height:0}
+button{cursor:pointer;color:var(--g);font-weight:500;background:#1d2622}
+button:hover{background:var(--hover)}
+button.on{background:var(--g);color:#06120c}
+button.warn{color:var(--r)}
+button.x{border:0;background:none;color:var(--dim);padding:0 4px;min-height:0}button.x:hover{color:var(--r)}
+.led{background:#000;border-radius:8px;image-rendering:pixelated}
+.big{display:flex;gap:10px;align-items:flex-start}
+.muted{color:var(--dim)}
+.up-c{color:var(--g)}.down-c{color:var(--r)}
+table{width:100%;border-collapse:collapse}td{padding:4px 4px;font-variant-numeric:tabular-nums}
+tr+tr td{border-top:1px solid var(--line)}
+table.small td{font-size:12.5px;border:0;padding:2px 4px}
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:6px}
+.gal div{text-align:center;cursor:pointer;font-size:11px;color:var(--dim)}
+.gal div:hover{color:var(--g)}
+.gal canvas{width:100%;aspect-ratio:1}
+.drop{border:1.5px dashed var(--line);border-radius:10px;padding:14px;text-align:center;color:var(--dim);cursor:pointer}
+.drop.on{border-color:var(--g);color:var(--g)}
+.bar{height:6px;background:var(--field);border-radius:3px;margin-top:4px;overflow:hidden}.bar i{display:block;height:100%;background:var(--g)}
+pre{margin:0;white-space:pre-wrap;color:var(--dim);font:11.5px/1.5 ui-monospace,Menlo,monospace;max-height:110px;overflow:auto}
+#toast{position:fixed;bottom:16px;right:16px;background:var(--g);color:#000;padding:8px 14px;border-radius:8px;display:none;z-index:3}
+.chips span{display:inline-block;background:var(--field);border-radius:6px;padding:1px 6px;margin:2px}
+.group{padding:6px 16px 0}.group h1{font-size:14px;margin:6px 0 8px;color:var(--fg);font-weight:600}.group h1 span{font-weight:400;color:var(--dim);font-size:12px;margin-left:8px}
+
+.note{font-size:11.5px;color:var(--dim);margin:-4px 0 6px}
+.small{font-size:11.5px}
+.volc{display:inline-flex;align-items:center;gap:6px}.volc input{width:90px;flex:none}.volc .v{min-width:46px;text-align:left;font-size:12.5px}
+details{margin-top:6px}summary{cursor:pointer;color:var(--dim);font-size:12px;list-style:none}summary::before{content:"▸ ";}details[open]>summary::before{content:"▾ "}summary:hover{color:var(--g)}
+.slot{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}
+.slot.off>*:not([data-k=on]){opacity:.55}
+</style>
+</head>
+<body>
+<header>
+  <b>▚ Timebox</b>
+  <span><span id="dot" class="dot"></span><span id="link">…</span></span>
+  <span class="muted">showing <b id="view" style="color:var(--fg)">…</b></span>
+  <span class="muted" id="now"></span>
+  <span style="flex:1"></span>
+  <button class="warn" onclick="stopAll()" title="same as tb exit">stop</button>
+</header>
+
+<div class="group"><h1>📦 On the box <span>saved on the Timebox · keeps working with the Mac off</span></h1></div>
+<main class="cols top">
+<div class="stack">
+<section>
+  <h2>SCREEN</h2>
+  <div class="row"><span class="seg"><button data-view="clock" onclick="cmd({cmd:'clock'})">clock</button><button data-view="temp" onclick="cmd({cmd:'temp'})">temp</button><button data-view="stopwatch" onclick="cmd({cmd:'stopwatch'})">stopwatch</button><button data-view="visualizer" onclick="cmd({cmd:'visualizer'})">music</button><button data-view="off" onclick="cmd({cmd:'off'})">off</button></span></div>
+  <div class="row"><label>score</label><input type="number" id="scR" min="0" max="999" value="0" class="n" style="color:#ff6b6b" title="red">:<input type="number" id="scB" min="0" max="999" value="0" class="n" style="color:#6bb8ff" title="blue"><button onclick="setScore()">show</button><button onclick="$('scR').value=$('scB').value=0;setScore()" title="back to 0 : 0">reset</button></div>
+  <div class="row"><label>bright</label><input type="range" id="bright" min="0" max="100"><span id="brightV" class="v"></span></div>
+  <div class="row"><label>clock</label><select id="h24"><option value="0">12h</option><option value="1">24h</option></select><select id="tF" title="thermometer unit"><option value="0">°C</option><option value="1">°F</option></select><input type="color" id="clockColor" title="clock color"><span class="muted" id="clockColorV" hidden></span><button onclick="saveDisplay()">apply</button></div>
+  <div class="row"><label>sounds</label><button id="bpOn" onclick="cmd({cmd:'beeps',on:(S.config.audio||{}).beeps===false}).then(()=>refresh(true))" title="the box's own hourly beep and button sounds">beeps</button><span class="muted small">hourly beep &amp; buttons</span></div>
+</section>
+<section>
+  <h2>MESSAGE ON THE BOX</h2>
+  <div class="big">
+    <canvas id="boxAnim" class="led" width="66" height="66" title="what is stored on the box now"></canvas>
+    <div class="grow"><div class="muted small">stored now</div><b id="boxAnimName">—</b>
+      <div class="muted small">loops on the screen until you pick clock, temp…</div></div>
+  </div>
+  <div class="row"><canvas id="btPrev" class="led" width="28" height="28" title="preview"></canvas>
+    <input type="text" id="btText" class="grow" maxlength="80" placeholder="type a message… e.g. BACK AT 3PM">
+    <input type="color" id="btColor" value="#ffc800" title="color">
+    <select id="btSpeed" title="scroll speed"><option value="slow">slow</option><option value="normal" selected>normal</option><option value="fast">fast</option></select>
+    <button onclick="storeText()">store</button></div>
+  <div id="btInfo" class="muted small"></div>
+  <details><summary>or a picture / GIF instead</summary>
+    <div class="row"><select id="boxAnimSel" class="grow mediaSel"></select>
+      <button onclick="storeOnBox($('boxAnimSel').value)">store</button>
+      <button onclick="$('file2').click()" title="add a picture or GIF from your Mac">+ upload</button><input type="file" id="file2" accept="image/*,video/*" hidden></div>
+  </details>
+</section>
+</div>
+<div class="stack">
+<section>
+  <h2>BOX ALARMS</h2>
+  <div class="note">ring or stay silent · flash the clock or the box's alarm animation · any box button stops it</div>
+  <div id="boxAl"></div>
+  <div class="row"><button onclick="loadBoxAlarms(true)" title="read the alarms stored on the box">↻ read from box</button><button class="warn" onclick="cmd({cmd:'stop-ring'})">stop alarm</button></div>
+</section>
+</div>
+<div class="stack">
+<section>
+  <h2>TIMEBOX INFO</h2>
+  <table id="sys" class="small"></table>
+  <details><summary>log</summary><pre id="log"></pre></details>
+</section>
+</div>
+</main>
+<div class="group"><h1>💻 From the Mac <span>only while tb is running</span></h1></div>
+<main class="cols">
+<div class="stack">
+<section>
+  <h2>SHOW NOW</h2>
+  <div class="big">
+    <canvas id="live" class="led" width="110" height="110" title="built-in views (clock/temp) are drawn by the box itself"></canvas>
+    <div class="grid2">
+      <button onclick="cmd({cmd:'weather'})">weather</button><button onclick="cmd({cmd:'stocks'})">stocks</button>
+      <button onclick="cmd({cmd:'date'})">date</button><button onclick="cmd({cmd:'anim',name:'rainbow',secs:8})">rainbow</button>
+      <span class="muted span2" id="liveNote">box draws clock/temp itself</span>
+    </div>
+  </div>
+  <div class="row"><input type="text" id="txt" class="grow" placeholder="text to show… HELLO"><input type="color" id="txtC" value="#ffc800" title="color"><input type="number" id="txtN" value="1" min="1" max="10" class="n" title="how many times"><button onclick="sendText()">show</button></div>
+  <details><summary>notification (icon + effect + sound)</summary>
+    <div class="row"><label>icon</label><select id="nIcon" class="grow"></select></div>
+    <div class="row"><label>effect</label><select id="nAnim" class="grow"><option value="">none</option></select></div>
+    <div class="row"><label>sound</label><select id="nS" class="grow"></select><button onclick="sendNotify()">notify</button></div>
+  </details>
+</section>
+<section>
+  <h2>AUTO ROTATION</h2>
+  <div class="row"><label>show</label><label class="ck"><input type="checkbox" data-r="weather">weather</label><label class="ck"><input type="checkbox" data-r="stocks">stocks</label><label class="ck"><input type="checkbox" data-r="date">date</label></div>
+  <div class="row"><label>every</label><input type="number" id="every" min="0" step="1" class="n" title="0 = off"><span class="muted">min (0 = off)</span><input type="number" id="page" min="1" max="30" step="1" class="n" title="how long each screen stays up"><span class="muted">sec per screen</span></div>
+  <div class="chips" id="extraRot"></div>
+  <div class="row"><label>then</label><select id="base" class="grow" title="what stays on screen between rotations"><option>clock</option><option>temp</option><option>off</option></select></div>
+  <div class="row"><label>night</label><input type="checkbox" id="qOn" title="dim at night, pause rotation"><input type="time" id="qFrom" class="t">→<input type="time" id="qTo" class="t"></div>
+  <div class="row"><label></label><span class="muted">night brightness</span><input type="number" id="qB" min="0" max="100" class="n"></div>
+  <div class="row"><label></label><button onclick="saveRotation()">apply</button><button onclick="saveRotation().then(() => cmd({cmd:'rotate-now'}))" title="save, then play the ticked items once">▶ try</button></div>
+  <details><summary>add an animation, text or picture to the rotation</summary>
+    <div class="row"><select id="rotKind"><option value="anim">anim</option><option value="text">text</option><option value="image">image</option></select>
+      <select id="rotArg" class="grow"></select><input type="text" id="rotText" class="grow" placeholder="message" style="display:none"><button onclick="addRot()">+</button></div>
+  </details>
+</section>
+</div>
+<div class="stack">
+<section>
+  <h2>STOCKS</h2>
+  <table id="stocks"></table>
+  <div class="row"><input type="text" id="tick" placeholder="add TSLA, BTC-USD…" class="grow"><button onclick="addTick()">+</button><button onclick="cmd({cmd:'stocks'})">show</button></div>
+  <details><summary>move alerts</summary>
+    <div class="row"><button id="alOn" onclick="toggleSec('alerts','on')">off</button>every
+      <input type="number" id="alStep" step="1" min="1" class="n" title="alert on every N % move">% move, check every<input type="number" id="alEvery" min="1" class="n" title="check every N minutes">min
+      <button onclick="section('alerts',{step:+$('alStep').value,every_min:+$('alEvery').value})">set</button></div>
+    <div class="row"><button id="alSound" onclick="toggleSec('alerts','sound')">tick</button><button id="alSpeak" onclick="toggleSec('alerts','speak')">speak</button>
+      <button onclick="cmd({cmd:'sound',name:'tick-up'})" title="test up">▲</button><button onclick="cmd({cmd:'sound',name:'tick-down'})" title="test down">▼</button></div>
+  </details>
+</section>
+<section>
+  <h2>WEATHER</h2>
+  <div class="big">
+    <canvas id="wx" class="led" width="77" height="77"></canvas>
+    <div class="grow"><div id="wxText" class="muted">loading…</div>
+      <div class="row"><input type="text" id="city" placeholder="city" class="grow"><button onclick="setCity()">set</button><button onclick="cmd({cmd:'weather'})">show</button></div></div>
+  </div>
+  <div class="muted small" style="margin-top:6px">weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener" style="color:inherit">Open-Meteo.com</a> (CC BY 4.0)</div>
+</section>
+<section>
+  <h2>REMINDERS &amp; TIMER</h2>
+  <table id="rem"></table>
+  <div class="row"><input type="text" id="rW" placeholder="15:30 or +20m" class="t"><input type="text" id="rX" class="grow" placeholder="CALL MOM"><button onclick="addRem()">+ add</button></div>
+  <div class="row"><label>timer</label><input type="text" id="tD" value="25m" class="n"><input type="text" id="tX" placeholder="BREAK" class="grow"><button onclick="startTimer()">start</button><button class="warn" onclick="cmd({cmd:'timer-stop'})">stop</button></div>
+  <div id="timerBox" class="muted"></div>
+  <details><summary>sound &amp; voice</summary>
+    <div class="row"><label>remind</label><select id="rS"></select><input type="text" id="rV" class="grow" placeholder="say: Time to call mom!"><button onclick="sayTest($('rV').value, $('rS').value)">▶</button></div>
+    <div class="row"><label>timer</label><select id="tS"></select><input type="text" id="tV" class="grow" placeholder="say: Break time!"><button onclick="sayTest($('tV').value, $('tS').value)">▶</button></div>
+  </details>
+</section>
+</div>
+<div class="stack">
+<section>
+  <h2>MAC ALARMS <span class="muted small" style="text-transform:none;letter-spacing:0">screen + voice, Mac must be on</span></h2>
+  <table id="alarms"></table>
+  <div class="row"><input type="time" id="aT" class="t"><select id="aD"><option>daily</option><option>mon-fri</option><option>weekend</option><option>mon</option><option>tue</option><option>wed</option><option>thu</option><option>fri</option><option>sat</option><option>sun</option></select><select id="aA" class="grow" title="animation"></select></div>
+  <div class="row"><input type="text" id="aX" class="grow" placeholder="text on screen"><input type="color" id="aC" value="#ffc800" title="text color"><select id="aM" class="grow mediaSel" title="picture / GIF to show"></select></div>
+  <div class="row"><select id="aS" title="sound"></select><input type="text" id="aV" class="grow" placeholder="say: Good morning! {temp}"><button onclick="sayTest($('aV').value, $('aS').value)">▶</button><button onclick="addAlarm()">+ add</button></div>
+</section>
+<section>
+  <h2>ANIMATIONS</h2>
+  <div class="row"><span class="muted">click to play for</span><input type="number" id="animS" value="8" min="1" max="120" class="n">s</div>
+  <div class="gal" id="gal"></div>
+</section>
+</div>
+<div class="stack">
+<section>
+  <h2>VOICE</h2>
+  <div class="row"><input type="text" id="sayT" class="grow" placeholder="Hi! It's {time}, {temp}, {weather}" title="placeholders: {time} {date} {day} {temp} {weather} {hi} {lo} {city}"><button onclick="sayTest($('sayT').value)">▶ say</button></div>
+  <div class="row"><label>volume</label><input type="range" id="vol" min="0" max="16" value="8"><span id="volV" class="v">8</span>
+    <span class="seg"><button id="spkOn" onclick="cmd({cmd:'mute',on:false}).then(()=>refresh(true))">on</button><button id="spkMute" onclick="cmd({cmd:'mute',on:true}).then(()=>refresh(true))">mute</button></span></div>
+  <div class="row"><label>chime</label><button id="chOn" onclick="toggleSec('chime','on')" title="every hour">off</button>
+    <input type="text" id="chSpeak" class="grow" placeholder="It's {time}"><button onclick="section('chime',{speak:$('chSpeak').value})">set</button></div>
+  <details><summary>voice settings</summary>
+    <div class="row"><label>voice</label><select id="voice" class="grow"></select>
+      <span class="seg" title="play through"><button id="outBox" onclick="section('voice',{out:'box'})">box</button><button id="outMac" onclick="section('voice',{out:'mac'})">mac</button></span></div>
+    <div class="row"><label>speed</label><input type="range" id="rate" min="120" max="300"><span id="rateV" class="v"></span></div>
+    <div class="row" title="hum before speech so the box's auto-mute opens in time; too low clips the first word"><label>wake</label><input type="range" id="lead" min="0" max="2000" step="50"><span id="leadV" class="v"></span></div>
+    <div class="row"><label>sound</label><select id="sndSel" class="grow"></select><button onclick="cmd({cmd:'sound',name:$('sndSel').value})">▶</button></div>
+    <div class="row"><label></label><button id="kaOn" onclick="toggleSec('voice','keep_awake')" title="keep the box speaker stream open (a bit more box battery)">awake</button>
+      <button onclick="section('voice',{name:$('voice').value,rate:+$('rate').value,lead_ms:+$('lead').value})">save</button>
+      <button onclick="cmd({cmd:'open-sound'})" title="choose the box as the Mac's sound output">mac output…</button></div>
+    <div class="muted" id="boxAudio"></div>
+  </details>
+</section>
+<section>
+  <h2>PICTURES &amp; GIFS</h2>
+  <div class="drop" id="drop">drop PNG / JPG / GIF or click<input type="file" id="file" accept="image/*,video/*" hidden></div>
+  <div class="row"><span class="muted">show for</span><input type="number" id="mediaS" value="10" min="1" class="n">s</div>
+  <div class="gal" id="mediaGal"></div>
+  <div id="mediaSel"></div>
+</section>
+</div>
+</main>
+<div id="toast"></div>
+
+<script>
+const K = new URLSearchParams(location.search).get('k');
+const $ = id => document.getElementById(id);
+let S = null, extra = [], selMedia = null, dirtyForms = false;
+
+async function api(path, body, raw) {
+  const opt = {headers: {'X-Token': K}};
+  if (body !== undefined) { opt.method = 'POST'; opt.body = raw ? body : JSON.stringify(body); }
+  if (raw) opt.headers['X-Name'] = raw;
+  const r = await fetch('/api/' + path, opt);
+  const j = await r.json();
+  if (j.error) toast('⚠ ' + j.error, true);
+  return j;
+}
+function toast(t, bad) { const e = $('toast'); e.textContent = t; e.style.background = bad ? 'var(--r)' : 'var(--g)'; e.style.display = 'block'; clearTimeout(e._t); e._t = setTimeout(() => e.style.display = 'none', 1800); }
+const cmd = c => api('cmd', c).then(j => j.ok && toast('→ ' + c.cmd));
+const settings = d => api('settings', d).then(j => { if (j.ok) { toast('saved'); refresh(true); } });
+const sched = d => api('schedule', d).then(j => { refresh(true); return j; });
+const section = (name, values) => api('section', {section: name, values}).then(j => { if (j.ok) { toast('saved'); refresh(true); } });
+const toggleSec = (name, key) => { const cur = (S.config[name] || {})[key]; section(name, {[key]: !(cur ?? (name === 'voice' && key === 'keep_awake'))}); };
+const onOff = (id, v, a, b) => { const e = $(id); e.classList.toggle('on', !!v); e.textContent = v ? (a || 'ON') : (b || 'off'); };
+function sayTest(text, sound) { if (sound && sound !== 'none') cmd({cmd: 'sound', name: sound}); if (text) setTimeout(() => cmd({cmd: 'say', text}), sound && sound !== 'none' ? 700 : 0); }
+
+function draw(cv, hex, dim) {
+  const g = cv.getContext('2d'), n = 11, s = cv.width / n;
+  g.fillStyle = '#000'; g.fillRect(0, 0, cv.width, cv.height);
+  for (let i = 0; i < 121; i++) {
+    const c = hex ? '#' + hex.substr(i * 6, 6) : '#000000';
+    g.fillStyle = c === '#000000' ? '#0d1410' : c;
+    g.beginPath(); g.arc((i % n + .5) * s, (Math.floor(i / n) + .5) * s, s * .42, 0, 7); g.fill();
+  }
+}
+function animate(cv, frames, ms) {
+  let i = 0; clearInterval(cv._t); draw(cv, frames[0]);
+  if (frames.length > 1) cv._t = setInterval(() => draw(cv, frames[i = (i + 1) % frames.length]), ms || 125);
+}
+const hexOf = name => ({white:'#ffffff',red:'#ff0000',green:'#00ff00',blue:'#0050ff',yellow:'#ffc800',orange:'#ff6400',cyan:'#00c8ff',pink:'#ff00a0',grey:'#5a5a5a',purple:'#9600ff'}[name] || name);
+const opts = (sel, list, keep) => { sel.innerHTML = (keep || '') + list.map(x => `<option>${x}</option>`).join(''); };
+
+async function refresh(forms) {
+  S = await api('state');
+  if (!S || S.error) return;
+  const up = S.link === 'up';
+  $('dot').className = 'dot' + (up ? ' up' : ''); $('link').textContent = up ? 'bluetooth up' : 'box offline';
+  $('view').textContent = S.view; $('now').textContent = S.now;
+  document.querySelectorAll('[data-view]').forEach(b => b.classList.toggle('on', b.dataset.view === S.view));
+  const au = S.config.audio || {};
+  $('spkOn').classList.toggle('on', !au.mute); $('spkMute').classList.toggle('on', !!au.mute);
+  $('boxAudio').textContent = S.box_audio ? '' : '♪ box not available as a speaker, sound plays on the Mac';
+  const vo = S.config.voice || {};
+  $('outBox').classList.toggle('on', vo.out !== 'mac'); $('outMac').classList.toggle('on', vo.out === 'mac');
+  const al = S.config.alerts || {}, ch = S.config.chime || {};
+  onOff('alOn', al.on); onOff('alSound', al.sound, 'tick ✓', 'tick'); onOff('alSpeak', al.speak, 'speak ✓', 'speak'); onOff('chOn', ch.on); onOff('kaOn', vo.keep_awake !== false, 'awake ✓', 'awake'); onOff('bpOn', au.beeps !== false, 'beeps ✓', 'beeps');
+  draw($('live'), S.preview);
+  $('liveNote').style.display = S.preview ? 'none' : '';
+  $('log').textContent = S.log.join('\n');
+  const t = S.timer;
+  $('timerBox').innerHTML = t ? `${t.text}: ${Math.floor(t.left / 60)}:${String(Math.floor(t.left % 60)).padStart(2, '0')} left<div class="bar"><i style="width:${100 * t.left / t.total}%"></i></div>` : '';
+  if (forms || !dirtyForms) fillForms();
+}
+
+function fillForms() {
+  const c = S.config;
+  $('base').value = c.base || 'clock';
+  $('bright').value = c.brightness; $('brightV').textContent = c.brightness;
+  $('h24').value = c.clock.h24 ? '1' : '0'; $('tF').value = c.temp_f ? '1' : '0';
+  $('clockColor').value = hexOf(c.clock.color); $('clockColorV').textContent = c.clock.color;
+  const q = c.quiet; $('qOn').checked = !!q;
+  $('qFrom').value = q ? q.from : '23:00'; $('qTo').value = q ? q.to : '07:00'; $('qB').value = q ? q.brightness : 8;
+  const r = c.rotation || {}, show = r.show || [];
+  $('every').value = r.every_min || 0; $('page').value = r.page_secs || 2;
+  const vo = c.voice || {}; $('voice').value = vo.name || ''; $('rate').value = vo.rate || 185; $('rateV').textContent = $('rate').value;
+  $('lead').value = vo.lead_ms ?? 400; $('leadV').textContent = $('lead').value + ' ms';
+  $('alStep').value = (c.alerts || {}).step || 1; $('alEvery').value = (c.alerts || {}).every_min || 5;
+  $('chSpeak').value = (c.chime || {}).speak || '';
+  $('vol').value = (c.audio || {}).volume ?? 8; $('volV').textContent = $('vol').value;
+  document.querySelectorAll('[data-r]').forEach(b => b.checked = show.includes(b.dataset.r));
+  extra = show.filter(x => !['weather', 'stocks', 'date'].includes(x)); drawExtra();
+  if (!$('nIcon').options.length) {
+    opts($('nIcon'), S.icons.concat(['none'])); opts($('nAnim'), S.effects, '<option value="">no anim</option>');
+    opts($('aA'), S.effects, '<option value="">no anim</option>'); $('aA').value = 'sunrise'; rotArgs();
+    for (const id of ['aS', 'rS', 'tS', 'nS']) { opts($(id), S.sounds, '<option value="none">no sound</option>'); $(id).value = id === 'nS' ? 'none' : 'Glass'; }
+    opts($('sndSel'), S.sounds);
+    opts($('voice'), S.voices, '<option value="">system voice</option>');
+
+  }
+  $('alarms').innerHTML = c.alarms.map((a, i) => `<tr><td>${a.time}</td><td>${a.days || 'daily'}</td><td>${a.text}</td><td class="muted">${a.anim || ''}${a.media ? ' 🖼' : ''}${a.sound ? ' ♪' : ''}${a.speak ? ' 🗣' : ''}</td>
+    <td style="white-space:nowrap"><button onclick="sched({action:'alarm-toggle',i:${i}})">${a.on !== false ? 'ON' : 'off'}</button><button class="x" onclick="sched({action:'alarm-rm',i:${i}})">✕</button></td></tr>`).join('') || '<tr><td class="muted">no alarms</td></tr>';
+  $('rem').innerHTML = c.reminders.map((r, i) => `<tr><td>${r.at.slice(5)}</td><td>${r.text}${r.speak ? ' 🗣' : ''}</td><td><button class="x" onclick="sched({action:'remind-rm',i:${i}})">✕</button></td></tr>`).join('') || '<tr><td class="muted">no reminders</td></tr>';
+  mediaGallery(); showBoxAnim();
+  dirtyForms = false;
+}
+
+function drawExtra() { $('extraRot').innerHTML = extra.map((x, i) => `<span>${x}<button class="x" onclick="extra.splice(${i},1);drawExtra()">✕</button></span>`).join(''); }
+function rotArgs() {
+  const k = $('rotKind').value; $('rotText').style.display = k === 'text' ? '' : 'none'; $('rotArg').style.display = k === 'text' ? 'none' : '';
+  opts($('rotArg'), k === 'anim' ? S.effects : S.media);
+}
+$('rotKind').onchange = rotArgs;
+function addRot() { const k = $('rotKind').value, v = k === 'text' ? $('rotText').value.trim() : $('rotArg').value; if (v) { extra.push(k + ':' + v); drawExtra(); } }
+function saveRotation() {        // one request: rotation + base + night mode
+  const show = [...document.querySelectorAll('[data-r]')].filter(b => b.checked).map(b => b.dataset.r).concat(extra);
+  return settings({show: show.length ? show.join(',') : 'none', every: +$('every').value, page: +$('page').value || 2, base: $('base').value,
+            quiet: $('qOn').checked ? `${$('qFrom').value}-${$('qTo').value}@${$('qB').value}` : 'off'});
+}
+function saveDisplay() {
+  api('section', {section: 'display', values: {temp_f: $('tF').value === '1'}});
+  settings({base: $('base').value, bright: +$('bright').value, h24: $('h24').value === '1', clock_color: $('clockColor').value,
+            quiet: $('qOn').checked ? `${$('qFrom').value}-${$('qTo').value}@${$('qB').value}` : 'off'});
+}
+$('rate').oninput = e => $('rateV').textContent = e.target.value;
+$('lead').oninput = e => $('leadV').textContent = e.target.value + ' ms';
+$('bright').oninput = e => { $('brightV').textContent = e.target.value; dirtyForms = true; };
+$('bright').onchange = e => cmd({cmd: 'bright', level: +e.target.value});
+$('vol').oninput = e => $('volV').textContent = e.target.value;
+$('vol').onchange = e => cmd({cmd: 'volume', level: +e.target.value});
+document.querySelectorAll('main input, main select').forEach(el => el.addEventListener('input', () => dirtyForms = true));
+
+async function loadStocks() {
+  const q = await api('quotes');
+  $('stocks').innerHTML = (q.map ? q : []).map(s => `<tr><td><b>${s.sym}</b></td><td>${s.price ?? '—'}</td>
+    <td class="${s.pct >= 0 ? 'up-c' : 'down-c'}">${s.pct == null ? '' : (s.pct >= 0 ? '▲' : '▼') + Math.abs(s.pct).toFixed(2) + '%'}</td>
+    <td><button onclick="cmd({cmd:'stocks',symbols:['${s.sym}']})">show</button><button class="x" onclick="rmTick('${s.sym}')">✕</button></td></tr>`).join('');
+}
+function addTick() { const t = $('tick').value.split(',').map(s => s.trim().toUpperCase()).filter(Boolean); if (t.length) settings({stocks: S.config.stocks.concat(t).join(',')}).then(() => { $('tick').value = ''; loadStocks(); }); }
+function rmTick(s) { const l = S.config.stocks.filter(x => x !== s); if (l.length) settings({stocks: l.join(',')}).then(loadStocks); }
+
+async function loadWeather() {
+  const w = await api('weather'); if (w.error) return;
+  draw($('wx'), w.frame);
+  $('wxText').innerHTML = `<b style="color:var(--fg)">${w.city}</b><br>${w.temp}° now · ${w.hi}° / ${w.lo}°`;
+  $('city').placeholder = w.city;
+}
+function setCity() { const c = $('city').value.trim(); if (c) settings({city: c}).then(() => { $('city').value = ''; loadWeather(); }); }
+
+function sendText() { const t = $('txt').value.trim(); if (t) cmd({cmd: 'text', text: t, color: $('txtC').value, times: +$('txtN').value}); }
+function sendNotify() {
+  const t = $('txt').value.trim() || 'HELLO', i = $('nIcon').value;
+  cmd({cmd: 'notify', text: t, icon: i === 'none' ? null : i, anim: $('nAnim').value || null, color: $('txtC').value, sound: sv('nS')});
+}
+
+async function loadAnims() {
+  const a = await api('anims'); $('gal').innerHTML = '';
+  for (const [n, frames] of Object.entries(a)) {
+    const d = document.createElement('div'); d.innerHTML = `<canvas class="led" width="66" height="66"></canvas>${n}`;
+    d.onclick = () => cmd({cmd: 'anim', name: n, secs: +$('animS').value});
+    $('gal').appendChild(d); animate(d.firstChild, frames);
+  }
+}
+
+let mediaShown = '';
+async function mediaGallery() {
+  const key = S.media.join('|'); if (key === mediaShown) return; mediaShown = key;
+  document.querySelectorAll('.mediaSel').forEach(sel => { const v = sel.value; opts(sel, S.media, '<option value="">no picture</option>'); sel.value = v; });
+  $('mediaGal').innerHTML = '';
+  for (const n of S.media) {
+    const d = document.createElement('div'); d.innerHTML = `<canvas class="led" width="66" height="66"></canvas>${n.slice(0, 12)}`;
+    d.onclick = () => selectMedia(n);
+    $('mediaGal').appendChild(d);
+    api('media?name=' + encodeURIComponent(n)).then(f => f.length && animate(d.firstChild, f, 200));
+  }
+}
+function selectMedia(n) {
+  selMedia = n;
+  $('mediaSel').innerHTML = `<div class="row"><b style="color:var(--fg)">${n}</b>
+    <button onclick="cmd({cmd:'media',name:selMedia,secs:+$('mediaS').value})">show</button>
+    <button onclick="cmd({cmd:'upload',name:selMedia})">store on box</button>
+    <button class="x" onclick="sched({action:'media-rm',name:selMedia});$('mediaSel').innerHTML=''">delete</button></div>`;
+}
+async function upload(f) {
+  toast('uploading ' + f.name);
+  const j = await api('upload', await f.arrayBuffer(), f.name);
+  if (j.ok) { await refresh(true); selectMedia(j.name); }
+}
+const drop = $('drop');
+drop.onclick = () => $('file').click();
+$('file').onchange = e => [...e.target.files].forEach(upload);
+drop.ondragover = e => { e.preventDefault(); drop.classList.add('on'); };
+drop.ondragleave = () => drop.classList.remove('on');
+drop.ondrop = e => { e.preventDefault(); drop.classList.remove('on'); [...e.dataTransfer.files].forEach(upload); };
+
+const sv = id => $(id).value === 'none' ? false : $(id).value;
+function addAlarm() { if ($('aT').value) sched({action: 'alarm-add', time: $('aT').value, days: $('aD').value, text: $('aX').value.trim().toUpperCase(), color: $('aC').value, anim: $('aA').value, media: $('aM').value, sound: sv('aS'), speak: $('aV').value.trim()}); }
+function addRem() { if ($('rW').value) sched({action: 'remind-add', when: $('rW').value.trim(), text: $('rX').value.trim().toUpperCase(), sound: sv('rS'), speak: $('rV').value.trim()}).then(() => { $('rW').value = $('rX').value = $('rV').value = ''; }); }
+function startTimer() {
+  const m = $('tD').value.trim().match(/^(\d+)([smh]?)$/); if (!m) return toast('timer like 25m, 90s, 1h', true);
+  cmd({cmd: 'timer', secs: +m[1] * ({s: 1, m: 60, '': 60, h: 3600}[m[2]]), text: ($('tX').value || 'TIME UP').toUpperCase(), sound: sv('tS'), speak: $('tV').value.trim()});
+}
+async function loadSys() {
+  const j = await api('sys'); if (j.error) return;
+  const b = j.box || {}, c = S ? S.config : {}, au = c.audio || {};
+  const rows = [['device', (b.name || '—') + (b.type ? ' · ' + b.type : '')],
+    ['bluetooth', (b.connected ? 'connected' : 'not connected') + ' · data link ' + (S ? S.link : '?') + (j.mtu ? ' · mtu ' + j.mtu : '')],
+    ['signal', b.rssi ? b.rssi + ' dBm' : '—'], ['battery', b.battery || '—'], ['address', b.address ? b.address.replace(/^((?:..[:-]){3}).*/, '$1••:••:••') : '—'],
+    ['profiles', b.services || '—'], ['speaker', (S && S.box_audio ? 'available' : 'not available') + ' · volume ' + (au.volume ?? '?') + '/16' + (au.mute ? ' · muted' : '')],
+    ['model', (j.model || {}).name + ((j.model || {}).tested ? '' : ' · untested, tell us how it goes')],
+    ['screen', `${(j.model || {}).size}×${(j.model || {}).size} · showing ${S ? S.view : '?'} · brightness ${c.brightness ?? '?'}`],
+    ['data channel', 'RFCOMM ' + (j.channel || 4) + ' (Serial Port)']];
+  $('sys').innerHTML = rows.map(([k, v]) => `<tr><td class="muted" style="width:76px">${k}</td><td>${v}</td></tr>`).join('');
+}
+const DAYS = [['daily', 127], ['mon-fri', 31], ['weekend', 96], ['mon', 1], ['tue', 2], ['wed', 4], ['thu', 8], ['fri', 16], ['sat', 32], ['sun', 64]];
+function alEdited(i) { const b = document.querySelector(`[data-slot="${i}"] [data-k="save"]`); b.classList.add('on'); b.textContent = 'save ●'; }
+async function loadBoxAlarms(say) {
+  const list = await api('boxalarms'); if (!list.map) return say && toast('box not answering');
+  if (say) toast('read ' + list.length + ' alarms from the box');
+  const X = (S.config.box_extras) || {};
+  $('boxAl').innerHTML = list.map(a => { const x = X[a.i] || {}, has = x.text || x.media || x.speak; return `<div class="slot ${a.on ? '' : 'off'}" data-slot="${a.i}">
+    <button class="${a.on ? 'on' : ''}" data-k="on" onclick="this.classList.toggle('on');this.textContent=this.classList.contains('on')?'ON':'off';alEdited(${a.i})">${a.on ? 'ON' : 'off'}</button>
+    <input type="time" data-k="time" value="${a.time}" class="t" onchange="alEdited(${a.i})">
+    <select data-k="days" onchange="alEdited(${a.i})">${DAYS.map(([n, m]) => `<option value="${m}" ${m === a.days ? 'selected' : ''}>${n}</option>`).join('')}${DAYS.some(d => d[1] === a.days) ? '' : `<option value="${a.days}" selected>custom</option>`}</select>
+    <select data-k="gif" title="what the box shows" onchange="alEdited(${a.i})"><option value="0" ${a.gif ? '' : 'selected'}>flash clock</option><option value="1" ${a.gif ? 'selected' : ''}>alarm animation</option></select>
+    <span class="volc" title="alarm sound, 0 = silent, 1-16 like the box volume"><input type="range" data-k="vol" min="0" max="16" value="${(a.ring ? a.volume : 0)}" oninput="this.nextElementSibling.textContent = +this.value ? '🔊 ' + this.value : 'silent';alEdited(${a.i})" onchange="alEdited(${a.i})"><span class="v">${(a.ring ? a.volume : 0) ? '🔊 ' + (a.ring ? a.volume : 0) : 'silent'}</span></span>
+    <button data-k="save" onclick="saveBoxAlarm(${a.i})">save</button>
+    <details style="flex-basis:100%;margin:0" ${has ? 'open' : ''}><summary title="text / picture / voice shown with this alarm while the Mac is on">+ Mac extras</summary><div class="row">
+    <input type="text" data-k="xtext" class="grow" placeholder="text…" value="${x.text || ''}" onchange="alEdited(${a.i})"><input type="color" data-k="xcolor" value="${x.color || '#ffc800'}" title="text color" onchange="alEdited(${a.i})">
+    <select data-k="xmedia" class="grow mediaSel" onchange="alEdited(${a.i})">${['', ...S.media].map(m => `<option value="${m}" ${x.media === m ? 'selected' : ''}>${m || 'no picture'}</option>`).join('')}</select>
+    <input type="text" data-k="xspeak" class="grow" placeholder="says…" value="${x.speak || ''}" onchange="alEdited(${a.i})"></div></details></div>`; }).join('');
+}
+let boxAnimShown = '';
+function showBoxAnim() {
+  const n = (S.config.box || {}).anim || '';
+  $('boxAnimName').textContent = n || 'none yet';
+  const t = (S.config.box || {}).text;
+  if (t && !$('btText').value) { $('btText').value = t.text; $('btColor').value = hexOf(t.color); $('btSpeed').value = t.speed; btPreview(); }
+  if (n && n !== boxAnimShown) {
+    boxAnimShown = n;
+    if (t) btFetch(t).then(r => r.frames.length && animate($('boxAnim'), r.frames, 200));
+    else api('media?name=' + encodeURIComponent(n)).then(f => f.length && animate($('boxAnim'), f, 200));
+  }
+}
+const btFetch = o => api('boxtext?' + new URLSearchParams({text: o.text, color: o.color, speed: o.speed}));
+let btTimer;
+async function btPreview() {
+  const o = {text: $('btText').value, color: $('btColor').value, speed: $('btSpeed').value};
+  if (!o.text.trim()) { $('btInfo').textContent = 'short words like HI MOM stand still · longer text scrolls (about 20 letters)'; return; }
+  const r = await btFetch(o);
+  if (r.frames.length) animate($('btPrev'), r.frames, 200);
+  $('btInfo').innerHTML = r.n === 1 ? '✓ fits as a still picture'
+    : `${r.trimmed ? `⚠️ too long, the box keeps: <b>${r.shown}</b>` : '✓ fits'} · ${r.n}/${r.max} frames · ${(r.n * 0.2).toFixed(0)} s loop`;
+}
+['btText', 'btColor', 'btSpeed'].forEach(id => $(id).addEventListener('input', () => { clearTimeout(btTimer); btTimer = setTimeout(btPreview, 250); }));
+function storeText() {
+  const text = $('btText').value.trim(); if (!text) return;
+  cmd({cmd: 'boxtext', text, color: $('btColor').value, speed: $('btSpeed').value}).then(() => setTimeout(() => refresh(true), 1500));
+}
+btPreview();
+function storeOnBox(n) { if (n) cmd({cmd: 'upload', name: n}).then(() => setTimeout(() => refresh(true), 1500)); }
+$('file2').onchange = async e => { for (const f of e.target.files) { await upload(f); $('boxAnimSel').value = selMedia; storeOnBox(selMedia); } };
+function saveBoxAlarm(i) {
+  const r = document.querySelector(`[data-slot="${i}"]`), v = k => r.querySelector(`[data-k="${k}"]`);
+  const on = v('on').classList.contains('on');
+  cmd({cmd: 'box-alarm', i, on, time: v('time').value, days: +v('days').value, ring: +v('vol').value > 0, gif: v('gif').value === '1', volume: +v('vol').value})
+    .then(() => sched({action: 'box-extra', i, on, time: v('time').value, days: +v('days').value, text: v('xtext').value.trim().toUpperCase(), color: v('xcolor').value, media: v('xmedia').value, speak: v('xspeak').value.trim()}))
+    .then(() => { toast('alarm ' + (i + 1) + ' saved on the box'); setTimeout(loadBoxAlarms, 800); });
+}
+function setScore() { cmd({cmd: 'score', red: +$('scR').value, blue: +$('scB').value}); }
+['scR', 'scB'].forEach(id => $(id).addEventListener('change', setScore));
+function stopAll() { if (confirm('Stop the service and disconnect the box?')) api('stop', {}).then(() => { document.body.innerHTML = '<p style="padding:20px">Stopped. Start again with <b>tb ui</b>.</p>'; }); }
+
+(async () => {
+  await refresh(true);
+  loadAnims(); loadStocks(); loadWeather();
+  setInterval(() => refresh(false), 1000);
+  setInterval(loadStocks, 60000);
+  loadSys(); setInterval(loadSys, 5000); loadBoxAlarms();
+})();
+</script>
+</body>
+</html>

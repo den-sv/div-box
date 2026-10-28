@@ -1,0 +1,6 @@
+bridge/Timebox Bridge.app/
+__pycache__/
+*.pyc
+.DS_Store
+mic/*.wav
+private/
