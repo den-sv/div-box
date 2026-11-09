@@ -253,12 +253,11 @@ class Player:
             self.send(proto.set_time())
             self.send(proto.set_alarm(int(cmd["i"]), cmd.get("on", True), h, m, int(cmd.get("days", 0x7F)),
                                       cmd.get("ring", True), int(cmd.get("volume", 0)), bool(cmd.get("gif"))))
-        elif k == "stop-ring":                         # A5 alone is unreliable, so also re-save the alarm that is ringing
+        elif k == "stop-ring":                         # A5 alone is unreliable, so also re-save (off, on) the ON alarms
             self.send(proto.frame(0xA5, b"\x00\x00\x00"))
-            now = time.localtime(); mins = now.tm_hour * 60 + now.tm_min
-            for a in self.box_alarms():
+            for a in self.box_alarms():                 # every ON alarm: the box's own clock may be off
                 h, m = map(int, a["time"].split(":"))
-                if a["on"] and 0 <= (mins - h * 60 - m) % 1440 <= 5:      # rang in the last 5 minutes
+                if a["on"]:
                     args = (a["i"], True, h, m, a["days"], a["ring"], a["volume"], a["gif"])
                     self.send(proto.set_alarm(a["i"], False, *args[2:]))
                     self.send(proto.set_alarm(*args))

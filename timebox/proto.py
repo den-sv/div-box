@@ -202,7 +202,7 @@ def set_time(t=None):
 
 
 # --- box alarms (verified on a Timebox Mini: 3 slots, 10-byte records) -------------------
-# record: index, on, hour, minute, weekday mask (bit0 = Mon … bit6 = Sun), mode (00 = flash only,
+# record: index, on, hour, minute, weekday mask (box: bit0 = Sun … bit6 = Sat), mode (00 = flash only,
 # 0A = flash + ring), trigger (01), fm hi/lo (00 00, never touch the radio), volume (0-100)
 ALARM_SLOTS = 3
 
@@ -220,8 +220,10 @@ def set_alarm(i, on, hour, minute, days=0x7F, ring=True, volume=4, gif=False):
     m = model()
     if m["family"] == "aura":
         return frame(0x43, bytes([hour, minute, 1, 0xFF if on else 0]))
-    if m["family"] == "new":     # untested: weekday bit0 = Sunday; Pixoo/Max/Backpack take mode/trigger 0, volume 1
-        days = ((days << 1) | (days >> 6)) & 0x7F
+    # we count days bit0 = Monday; the box counts bit0 = Sunday (Divoom docs; on the Mini a "tue" alarm rang on a
+    # Monday, 2026-11-09), so rotate one bit
+    days = ((days << 1) | (days >> 6)) & 0x7F
+    if m["family"] == "new":     # untested: Pixoo/Max/Backpack take mode/trigger 0, volume 1
         if m.get("no_volume"):
             return frame(0x43, bytes([i, int(on), hour, minute, days, 0, 0, 0, 0, 1]))
     return frame(0x43, bytes([i, int(on), hour, minute, days & 0x7F, 0x0A, 4 if gif else 1, 0, 0, vol]))
@@ -232,7 +234,7 @@ def parse_alarms(payload):
     out = []
     for k in range(0, len(payload) - 9, 10):
         r = payload[k:k + 10]
-        days = r[4] if model()["family"] == "mini" else ((r[4] >> 1) | (r[4] << 6)) & 0x7F
+        days = ((r[4] >> 1) | (r[4] << 6)) & 0x7F        # box bit0 = Sunday -> ours bit0 = Monday
         out.append({"i": r[0], "on": bool(r[1]), "time": f"{r[2]:02d}:{r[3]:02d}", "days": days,
                     "ring": r[5] != 0 and r[9] > 0, "music": r[5] == 0, "gif": r[6] == 4, "volume": round(r[9] * 16 / 100)})
     return out

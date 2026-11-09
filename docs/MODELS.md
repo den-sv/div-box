@@ -41,7 +41,7 @@ On 16×16 it's centred with a small border. On 32×32 it's doubled and centred. 
 | Clock | `45 00 h24 RGB` | `45 00 h24 RGB` | `2D h24` + `45 00 h24 style …` |
 | Off | `45 02` | `45 02` | light channel, power 0 |
 | Weather | – | – | `5F temp code`: the box keeps its own weather screen; sent whenever weather is shown |
-| Box alarms | 3 slots, bit0 = Monday (verified) | simple on/off | bit0 = Sunday (converted for you), untested |
+| Box alarms | 3 slots, bit0 = Sunday (converted for you, verified) | simple on/off | bit0 = Sunday (converted for you), untested |
 | Stopwatch | yes | – | – (skipped) |
 | Volume | 0-16 | 0-16 | 0-15; none on Pixoo / Max / Backpack |
 

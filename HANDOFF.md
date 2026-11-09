@@ -70,8 +70,8 @@ Only one process may hold the bridge at a time (the CLI routes through the servi
 
 ## Box alarms (verified 2026-10-26)
 0x42 read / 0x43 write, 3 slots × 10 bytes (see docs/PROTOCOL.md §8). Mode 00 = flash, 0A = ring. Weekday mask bit0 = MONDAY (verified). Alarm volume byte 0-100 (2-5 quiet); tb/dashboard show it as 0-16 like the box volume.
-Remote stop: A5 00 00 00 alone was unreliable, so stop-ring now also re-saves (off, then on) any alarm that went off in the
-last 5 min. Confirmed by eye 2026-10-27 (silent flash-clock alarm stopped 15 s in). Mac-side extras (text/picture/voice) play 2 s AFTER the
+Remote stop: A5 00 00 00 alone was unreliable, so stop-ring now also re-saves (off, then on) every ON alarm (2026-11-09: the box clock
+had drifted, so a time window missed it). Confirmed by eye 2026-10-27 (silent flash-clock alarm stopped 15 s in). Mac-side extras (text/picture/voice) play 2 s AFTER the
 alarm starts: they show over a FLASH alarm, a RINGING box hides them. `tb boxalarm`, dashboard "BOX ALARMS".
 private/divoom_official_bluetooth.md = Divoom's OFFICIAL BT docs (92 pages, newer gen). Tried on the Mini 2026-10-28,
 results in docs/PROTOCOL.md (end): scoreboard ✅ (tb score), memorial ✅ but plays music (not used), alarm GIF 0x51 ❌, countdown ❌.
@@ -98,3 +98,7 @@ matches any Divoom name, but the owner's built app was NOT rebuilt (rebuilding r
 Screens (2026-10-28, owner's rule): NOTHING scrolls on the Mac-side jobs. Every screen is a still card of max two
 ~3-letter lines (gfx.card / gfx.pages), shown gfx.PAGE s (rotation.page_secs, default 2; dashboard "sec per screen", `tb set --page 3`; build() sets it). Stocks = [ticker] + [price / change%], weather = one screen
 [CITY / 12C], date = [OCT / 28]. Only `boxtext` (stored on the box) may scroll.
+
+Alarm weekdays (2026-11-09): the Mini counts bit0 = SUNDAY (Divoom docs were right; the old "bit0 = Mon verified" was wrong:
+a "tue" alarm rang on a Monday). proto.set_alarm/parse_alarms rotate for every model. Old alarms saved before this show
+one day early in the dashboard: re-save them.

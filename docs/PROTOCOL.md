@@ -221,7 +221,7 @@ BF 00  49  00 0A 0A 04  FRAME_INDEX  DELAY  <182 bytes pixel data>
 ## 8. Verified on a real Timebox Mini (2026-10-26)
 | CMD | Args | Reply payload (after `CMD 55`) | Notes |
 |---|---|---|---|
-| `42` get alarms | – | 3 × 10-byte records | record = idx, on, hour, min, weekday mask (bit0 Mon … bit6 Sun), mode, trigger, fm hi, fm lo, volume |
+| `42` get alarms | – | 3 × 10-byte records | record = idx, on, hour, min, weekday mask (bit0 **Sun** … bit6 Sat, as Divoom's docs say; corrected 2026-11-09 after a "Tue" alarm rang on a Monday), mode, trigger, fm hi, fm lo, volume |
 | `43` set alarm | one 10-byte record | – (ack) | mode `0A` = ring (volume byte 0 = **silent**, verified); mode `00` is NOT silent: it plays Bluetooth music (the box sends PLAY → Music opens on the Mac) and beeps when none arrives; trigger `01` = flash clock, `04` = the box's built-in alarm animation (NOT the uploaded 0x49 one; checked 2026-10-27); keep fm `00 00`. Rings with the Mac off. stop it with `A5 00 00 00` |
 | `A5` alarm listen | `00 00 00` | – (no ack) | per Divoom's official docs this is the alarm-sound *preview* (`on mode vol`), not a stop; so alone it is unreliable. A5 + re-saving the ringing alarm (off, then on via `43`) stops it (verified 2026-10-27). The box's own button always works. While ringing, the box ignores images and drowns our audio |
 | `46` get settings | – | 23 bytes | byte 8 = brightness; the rest is still undecoded |
